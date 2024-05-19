@@ -15,10 +15,10 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QCheckBox,
     QLineEdit,
-    QFileDialog
+    QFileDialog,
 )
 
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QFont
 from PyQt6.QtCore import Qt
 
 import os
@@ -39,6 +39,15 @@ from collections import defaultdict
 
 from dino.dino import classify
 from transformers import Dinov2ForImageClassification
+
+import windows.database as database
+from sqlalchemy import select
+
+from PIL import Image
+
+import dashboard.temp as dashboard
+
+import webbrowser
 
 
 def loadPaths(startpath: str, tree : QTreeWidget) -> None:
@@ -68,41 +77,6 @@ def getItemFullPath(item : QTreeWidgetItem) -> str:
         out =  "results/" + out
 
     return out
-
-
-def accuracy(detectOutput : dict, filesCount) -> float:
-    classNameToClassCode = {
-        "shipun" : 3,
-        "klikun" : 2,
-        "small"  : 1
-    }
-
-    data = defaultdict(list)
-
-    correctFiles = 0
-    labelsNotShowed = False
-
-    for fileName, labelAccTupleList in detectOutput.items():
-
-        maxConfTuple = max(labelAccTupleList, key = lambda labelAccTuple: labelAccTuple[1])
-        
-        className = maxConfTuple[0]
-
-        print(className, fileName)
-
-        if ("img" or "shipun") in fileName:
-            if className == "shipun":
-                correctFiles += 1
-        elif (className in fileName) and (className != ""):
-            correctFiles += 1
-
-        data["name"].append(fileName)
-        data["class"].append(classNameToClassCode[className])
-
-    dataFrame = pd.DataFrame(data)
-    dataFrame.to_csv(sep=";", encoding="utf-8", path_or_buf="tables\\output.csv", index = False)
-
-    return (correctFiles / filesCount) * 100
 
 NUM_CLASSES = 3
 
@@ -152,7 +126,7 @@ class MainWindow(QMainWindow):
 
 
         # Установка ориентаций элементов в лейаутах ============================
-        self.secondColLayout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.secondColLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.firstColLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
         # ======================================================================
 
@@ -186,52 +160,6 @@ class MainWindow(QMainWindow):
         self.resultFileTree.itemClicked.connect(self.treeItemClicked)
 
         loadPaths(startpath=RESULT_PATH, tree=self.resultFileTree)
-
-        # Слайдер процента уверенности ========================================
-        # self.detectionPercentSliderLayout = QHBoxLayout()
-
-        # self.detectionSliderLabel = QLabel("Минимальный процент уверенности")
-        # self.detectionSliderLabel.setMaximumHeight(15)
-        # self.detectionSliderLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-
-        # self.detectionPercentLabel = QLabel("50%")
-        # self.detectionPercentLabel.setMaximumWidth(30)
-        # self.detectionPercentLabel.setAlignment(Qt.AlignmentFlag.AlignRight)
-
-        # self.detectionPercentSlider = QSlider(Qt.Orientation.Horizontal)
-        # self.detectionPercentSlider.setMaximumWidth(int(self.windowWidth / 5) - 35)
-        # self.detectionPercentSlider.setRange(1, 100)
-        # self.detectionPercentSlider.setValue(50)
-        # self.detectionPercentSlider.setSingleStep(1)
-        # self.detectionPercentSlider.valueChanged.connect(self.onPercentSliderValueChange)
-
-        # self.detectionPercentSliderLayout.addWidget(self.detectionPercentLabel)
-        # self.detectionPercentSliderLayout.addWidget(self.detectionPercentSlider)
-        # ======================================================================
-
-
-        # Слайдер толщины линии обводки лебедей ================================
-        # self.lineThicknessSliderLayout = QHBoxLayout()
-
-        # self.lineThicknessSliderLabel = QLabel("Толщина линий выделения")
-        # self.lineThicknessSliderLabel.setMaximumHeight(15)
-        # self.lineThicknessSliderLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-
-        # self.lineThicknessLabel = QLabel("3")
-        # self.lineThicknessLabel.setMaximumWidth(30)
-        # self.lineThicknessLabel.setAlignment(Qt.AlignmentFlag.AlignRight)
-
-        # self.lineThicknessSlider = QSlider(Qt.Orientation.Horizontal)
-        # self.lineThicknessSlider.setMaximumWidth(int(self.windowWidth / 5) - 35)
-        # self.lineThicknessSlider.setRange(0, 10)
-        # self.lineThicknessSlider.setValue(3)
-        # self.lineThicknessSlider.setSingleStep(1)
-        # self.lineThicknessSlider.valueChanged.connect(self.onThicknessSliderValueChange)
-
-        # self.lineThicknessSliderLayout.addWidget(self.lineThicknessLabel)
-        # self.lineThicknessSliderLayout.addWidget(self.lineThicknessSlider)
-        # ======================================================================
-
 
         # Чекбоксы девайсов для работы модели ==================================
         self.deviceCheckBoxesLabel = QLabel("Девайс")
@@ -294,35 +222,21 @@ class MainWindow(QMainWindow):
         self.classifyButton.clicked.connect(self.onClassifyButtonClicked)
         self.classifyButton.setEnabled(False)
 
+        # Кнопка открытия дашборда
+        self.openDashboardButton = QPushButton("Открыть статистику")
+        self.openDashboardButton.clicked.connect(self.onOpenDashboardClicked)
+        self.openDashboardButton.setEnabled(True)
+
 
         # Добавление виджетов и лейаутов по их колонкам ========================
         self.firstColLayout.addWidget(self.resultFileTree)
-        # self.firstColLayout.addWidget(self.detectionSliderLabel)
-        # self.firstColLayout.addLayout(self.detectionPercentSliderLayout)
-        # self.firstColLayout.addWidget(self.lineThicknessSliderLabel)
-        # self.firstColLayout.addLayout(self.lineThicknessSliderLayout)
         self.firstColLayout.addWidget(self.deviceCheckBoxesLabel)
         self.firstColLayout.addLayout(self.deviceCheckBoxesLayout)
-        # self.firstColLayout.addWidget(self.arelabelsNotShowedCheckBox)
         self.firstColLayout.addLayout(self.pathLayout)
         self.firstColLayout.addWidget(self.chooseFolderButton)
-        # self.firstColLayout.addWidget(self.detectButton)
         self.firstColLayout.addWidget(self.classifyButton)
+        self.firstColLayout.addWidget(self.openDashboardButton)
         # ======================================================================
-
-
-    # def onPercentSliderValueChange(self):
-    #     '''
-    #     Функция вызываемая при смене значения на слайдере
-    #     '''
-    #     self.detectionPercentLabel.setText(str(self.sender().value()) + "%")
-
-    
-    # def onThicknessSliderValueChange(self):
-    #     '''
-    #     Функция вызываемая при смене значения на слайдере
-    #     '''
-    #     self.lineThicknessLabel.setText(str(self.sender().value()))
 
 
     def checkBoxCheckMate(self):
@@ -334,18 +248,6 @@ class MainWindow(QMainWindow):
                 self.cudaCheckBox.setChecked(False)
             elif self.sender() == self.cudaCheckBox:
                 self.cpuCheckBox.setChecked(False)
-
-
-    # def labelsCheckBoxChange(self):
-    #     if self.sender().checkState() == Qt.CheckState.Checked:
-    #         self.labelsNotShowed = True
-    #         self.lineThicknessSlider.setValue(0)
-    #     else:
-    #         self.labelsNotShowed = False
-    #         self.lineThicknessSlider.setValue(3)
-
-        
-    #     self.lineThicknessSlider.setEnabled(not self.labelsNotShowed)
 
 
     def chooseFolder(self):
@@ -379,30 +281,19 @@ class MainWindow(QMainWindow):
         self.imageBrowser.updatePixmap(None)
         self.imageBrowser.setMaximumWidth(int(self.windowWidth / 2))
 
-        self.secondColLayout.addWidget(self.imageBrowser, alignment=Qt.AlignmentFlag.AlignTop)
+        self.imageTitle = QLabel("")
+        self.imageTitle.setMaximumHeight(60)
+        self.imageTitle.setFont(QFont("Arial", 30))
 
-
-    # @staticmethod
-    # def _get_swans_quantity(label: str) -> list:
-    #     months_swan_quantity = [0 for i in range(12)]
-    #     for swan_data in statistic_db.get_records_by_name(label):
-    #         month = int(swan_data[2].split('.')[1])-1
-    #         months_swan_quantity[month] += swan_data[1]
-    #     return months_swan_quantity
+        self.secondColLayout.addWidget(self.imageTitle, alignment=Qt.AlignmentFlag.AlignHCenter)
+        self.secondColLayout.addWidget(self.imageBrowser, alignment=Qt.AlignmentFlag.AlignHCenter)
 
 
     def onClassifyButtonClicked(self):
-        classify_thread = Thread(target=self.classify)
+        classify_thread = Thread(name="classifier_thread", target=self.classify)
         classify_thread.start()
         
         self.classifyButton.setEnabled(False)
-
-    # def onDetectButtonClicked(self):
-    #     '''
-    #     Функция вызываемая при нажатии на кнопку Detect, создает отдельный поток для выполнения детектирования
-    #     '''
-    #     detection_thread = Thread(target=self.detect)
-    #     detection_thread.start()
 
     def classify(self):
         if self.cudaCheckBox.isChecked(): device = "cuda:0"
@@ -410,81 +301,32 @@ class MainWindow(QMainWindow):
 
         imgs = list(map(lambda path: str(self.currentlySelectedFolder + "/" + path), os.listdir(self.currentlySelectedFolder)))
         print(imgs)
-        print(classify(imgs, self.model, device))
+        classify(imgs, self.model, device)
+        self.saveImgsToResults(imgs)
+        self.resultFileTree.clear()
+        loadPaths(RESULT_PATH, self.resultFileTree)
 
+
+    def saveImgsToResults(self, imgsPaths : list[str]):
+        runName = f"run_{self.get_current_datetime()}"
+        os.mkdir(os.path.join(RESULT_PATH, runName))
+        for imgPath in imgsPaths:
+            img = Image.open(imgPath)
+            imgName = os.path.basename(imgPath)
+            img.save(os.path.join(RESULT_PATH, runName, imgName))
+
+
+    def get_current_datetime(self):
+        return datetime.datetime.now().strftime("%I-%M%p_%B_%d_%Y")
     
-    # def detect(self):
-    #     '''
-    #     Функция детектирования
-    #     '''
-    #     # self.detectButton.setEnabled(False)
-
-    #     if self.cudaCheckBox.isChecked():
-    #         device = "cuda:0"
-    #     else: 
-    #         device = "cpu"
-
-    #     # Аргументы для модели =================================================
-    #     options = {
-    #         'weights': ['models\\best_yolov5x_50e.pt'], 
-    #         'source': self.currentlySelectedFolder, 
-    #         'data': WindowsPath('data/coco128.yaml'), 
-    #         'imgsz': [640, 640], 
-    #         'conf_thres': self.detectionPercentSlider.value()/100, 
-    #         'iou_thres': 0.45, 
-    #         'max_det': 1000, 
-    #         'device': device, 
-    #         'view_img': False, 
-    #         'save_txt': False, 
-    #         'save_conf': False, 
-    #         'save_crop': False, 
-    #         'nosave': False, 
-    #         'classes': None, 
-    #         'agnostic_nms': False, 
-    #         'augment': False, 
-    #         'visualize': False, 
-    #         'update': False, 
-    #         'project': WindowsPath('results'), 
-    #         'name': 'run', 
-    #         'exist_ok': False, 
-    #         'line_thickness': 3,
-    #         'hide_labels': self.labelsNotShowed, 
-    #         'hide_conf': False, 
-    #         'half': False, 
-    #         'dnn': False, 
-    #         'vid_stride': 1
-    #     }
-    #     # ======================================================================
-
+    
+    def onOpenDashboardClicked(self):
+        dashboardThread = Thread(name="dashboard_thread", target=dashboard.app.run_server)
+        dashboardThread.start()
+        webbrowser.open("http://127.0.0.1:8050/")
         
-    #     # Вызов функции детектирования =========================================
-    #     # detectResults = detect(options)
-    #     en_to_rus = {'small': 'Малые лебеди',
-    #                  'klikun': 'Кликуны',
-    #                  'shipun': 'Шипуны'}
-    #     date = str(datetime.datetime.now()).split()[0]
-    #     date = date.replace('-', '.')
-    #     date = date.split('.')
-    #     date = f"{date[2]}.{date[1].replace('0', '')}.{date[0]}"
-    #     # for _, val in detectResults.items():
-    #     #     for swan in val:
-    #     #         statistic_db.add_record(swan_name=en_to_rus[swan[0]],
-    #     #                                 quantity=1,
-    #     #                                 date=date)
-
-    #     # print(f"Точность при валидации: {accuracy(detectResults, len(os.listdir(self.currentlySelectedFolder)))}%")
-    #     # ======================================================================
-
-    #     # Обновление древа файлов результатов после детектирования =============
-    #     self.resultFileTree.clear()
-    #     loadPaths(RESULT_PATH, self.resultFileTree)
-    #     # ======================================================================
-
-    #     # Обновления поля выбранной в данный момент папки ======================
-    #     self.currentlySelectedFolder = ""
-    #     self.updatePathDisplay()
-    #     # ======================================================================
-
+    def concurrentDashboardThings(self):
+        dashboard.app.run_server()
 
     def treeItemClicked(self, it : QTreeWidgetItem, col):
         '''
@@ -492,3 +334,10 @@ class MainWindow(QMainWindow):
         '''
         if not os.path.isdir(getItemFullPath(it)):
             self.imageBrowser.updatePixmap(getItemFullPath(it))
+            path = getItemFullPath(it)
+            imgName = os.path.basename(path)
+            print(imgName)
+            if ((".png" in imgName) or (".jpg" in imgName) or (".JPEG" in imgName)):
+                result = database.session.scalars(select(database.Image).where(database.Image.name == imgName))
+                imgClass = result.all()[0]
+                self.imageTitle.setText(imgClass.class_)

@@ -6,3 +6,4 @@
 /windows/__pycache__
 /constants/__pycache__
 /dino/dinov2_weights.pth
+/images.db

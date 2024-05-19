@@ -50,7 +50,7 @@ def classify(imgsPath: list, model, device):
     classes = labelsToClass(labels)
     save_imgs_metadata(imgs_path=imgsPath, classes=classes)
 
-    return classes
+    print(classes)
 
 
 def labelsToClass(labels : list):

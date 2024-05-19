@@ -28,7 +28,7 @@ class Image(Base):
     hash: Mapped[str] = mapped_column(nullable=True)
 
 
-Base.metadata.drop_all(engine)
+# Base.metadata.drop_all(engine)
 Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
