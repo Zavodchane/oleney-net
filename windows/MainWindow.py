@@ -344,7 +344,7 @@ class MainWindow(QMainWindow):
             path = getItemFullPath(it)
             imgName = os.path.basename(path)
             print(imgName)
-            if ((".png" in imgName) or (".jpg" in imgName) or (".JPEG" in imgName)):
+            if ((".png" in imgName.lower()) or (".jpg" in imgName.lower()) or (".JPEG" in imgName.upper())):
                 result = database.session.scalars(select(database.Image).where(database.Image.name == imgName))
                 imgClass = result.all()[0]
                 self.imageTitle.setText(imgClass.class_)
