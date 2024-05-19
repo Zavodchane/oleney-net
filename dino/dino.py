@@ -52,6 +52,8 @@ def classify(imgsPath: list, model, device):
 
     print(classes)
 
+    return classes
+
 
 def labelsToClass(labels : list):
     classList = list(map(lambda x: labelsToClassDict[x], labels))

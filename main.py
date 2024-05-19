@@ -13,10 +13,10 @@ def setupFolders():
     '''
     Подготовка папки результатов при ее отсутствии
     '''
-    try: 
-        os.mkdir("tables")
+    try:
         os.mkdir("results")
-    except FileExistsError: pass
+    except FileExistsError:
+        pass
 
 setupFolders()
 

@@ -102,5 +102,4 @@ app.layout = html.Div(children=[
             style={'flex': '1', 'marginLeft': '10px'}
         )
     ])
-
 ])

@@ -45,8 +45,6 @@ from sqlalchemy import select
 
 from PIL import Image
 
-import dashboard.temp as dashboard
-
 import webbrowser
 
 
@@ -227,6 +225,9 @@ class MainWindow(QMainWindow):
         self.openDashboardButton.clicked.connect(self.onOpenDashboardClicked)
         self.openDashboardButton.setEnabled(True)
 
+        # Лейбл с результатами последней классификации
+        self.lastClassificationLabel = QLabel("")
+        self.lastClassificationLabel.setFont(QFont("Arial", 14))
 
         # Добавление виджетов и лейаутов по их колонкам ========================
         self.firstColLayout.addWidget(self.resultFileTree)
@@ -236,6 +237,7 @@ class MainWindow(QMainWindow):
         self.firstColLayout.addWidget(self.chooseFolderButton)
         self.firstColLayout.addWidget(self.classifyButton)
         self.firstColLayout.addWidget(self.openDashboardButton)
+        self.firstColLayout.addWidget(self.lastClassificationLabel, alignment=Qt.AlignmentFlag.AlignTop)
         # ======================================================================
 
 
@@ -301,10 +303,14 @@ class MainWindow(QMainWindow):
 
         imgs = list(map(lambda path: str(self.currentlySelectedFolder + "/" + path), os.listdir(self.currentlySelectedFolder)))
         print(imgs)
-        classify(imgs, self.model, device)
+        classes = classify(imgs, self.model, device)
         self.saveImgsToResults(imgs)
         self.resultFileTree.clear()
         loadPaths(RESULT_PATH, self.resultFileTree)
+
+        self.lastClassificationLabel.setText(
+            f"Данные последней классификации:\n- Кабарга: {classes.count('Кабарга')}\n- Олень: {classes.count('Олень')}\n- Косуля: {classes.count('Косуля')}"
+        )
 
 
     def saveImgsToResults(self, imgsPaths : list[str]):
@@ -321,12 +327,11 @@ class MainWindow(QMainWindow):
     
     
     def onOpenDashboardClicked(self):
+        import dashboard.temp as dashboard
         dashboardThread = Thread(name="dashboard_thread", target=dashboard.app.run_server)
         dashboardThread.start()
         webbrowser.open("http://127.0.0.1:8050/")
         
-    def concurrentDashboardThings(self):
-        dashboard.app.run_server()
 
     def treeItemClicked(self, it : QTreeWidgetItem, col):
         '''
