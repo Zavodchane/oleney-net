@@ -13,8 +13,14 @@ cd oleney-net
 ```bash
 pip install -r requirements.txt
 ```
-5. Скачайте веса модели по ссылке `сюда ссылку на диск` и перенесите их в папку `dino`
+5. Скачайте веса модели по ссылке на [Диск](https://disk.yandex.ru/d/E8v4ZSEtzoc-0g) и перенесите их в папку `dino`
 6. Запустите приложение:
 ```bash
 python main.py
 ```
+
+## Веса модели
+
+[DINOv2_vitg14_reg](https://disk.yandex.ru/d/E8v4ZSEtzoc-0g)
+
+[DINOv2_vitb14](https://disk.yandex.ru/d/E8v4ZSEtzoc-0g)
