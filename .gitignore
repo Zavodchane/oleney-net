@@ -5,6 +5,6 @@
 /widgets/__pycache__
 /windows/__pycache__
 /constants/__pycache__
+/dashboard/__pycache__
 /dino/dinov2_weights.pth
 /images.db
-/dashboard/__pycache__
