@@ -38,14 +38,16 @@ def classify(imgsPath: list, model, device):
     dataset = CustomDataset(imgsPath)
     dataloader = DataLoader(dataset, batch_size=10, shuffle=False)
     model.load_state_dict(torch.load("dino/dinov2_weights.pth", map_location=device))
+    torch.cuda.empty_cache()
     model.eval()
 
     labels = []
-    for batch in dataloader:
-        outputs = model.dinov2(batch.to(device))
-        outputs = model.classifier(outputs.pooler_output)
-        _, preds = torch.max(outputs, 1)
-        labels.extend(preds.cpu().tolist())
+    with torch.no_grad():
+      for batch in dataloader:
+          outputs = model.dinov2(batch.to(device))
+          outputs = model.classifier(outputs.pooler_output)
+          _, preds = torch.max(outputs, 1)
+          labels.extend(preds.cpu().tolist())
 
     classes = labelsToClass(labels)
     save_imgs_metadata(imgs_path=imgsPath, classes=classes)

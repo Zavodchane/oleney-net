@@ -86,6 +86,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.model = Dinov2ForImageClassification.from_pretrained("facebook/dinov2-base")
         self.model.classifier = torch.nn.Linear(768, NUM_CLASSES)
+        # self.model = torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14_reg_lc", pretrained=True)
+        # self.model.linear_head = torch.nn.Linear(768, 3)
         
 
         self.initUi()
