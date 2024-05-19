@@ -1,0 +1,8 @@
+/results
+/venv
+/dino/__pycache__
+/constans/__pycache__
+/widgets/__pycache__
+/windows/__pycache__
+/constants/__pycache__
+/dino/dinov2_weights.pth
