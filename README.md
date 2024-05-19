@@ -21,6 +21,8 @@ python main.py
 
 ## Веса модели
 
+Диск с [весами](https://disk.yandex.ru/d/HN5eQtuXQlhnmA)
+
 [DINOv2_vitg14_reg](https://disk.yandex.ru/d/E8v4ZSEtzoc-0g)
 
 [DINOv2_vitb14](https://disk.yandex.ru/d/E8v4ZSEtzoc-0g)
